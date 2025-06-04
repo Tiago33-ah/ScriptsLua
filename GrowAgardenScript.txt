@@ -1,0 +1,225 @@
+local PLACE_ID = 126884695634066
+if game.PlaceId ~= PLACE_ID then return end
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "GameEnhancerUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 520, 0, 260)
+mainFrame.Position = UDim2.new(0.5, -260, 0.5, -130)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = false
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = mainFrame
+
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 30)
+topBar.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+
+local topCorner = Instance.new("UICorner")
+topCorner.CornerRadius = UDim.new(0, 10)
+topCorner.Parent = topBar
+
+local dragging = false
+local dragInput, dragStart, startPos
+
+topBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+topBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+local function createLabel(text, pos)
+	local label = Instance.new("TextLabel")
+	label.Text = text
+	label.Size = UDim2.new(0, 200, 0, 30)
+	label.Position = pos
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.Font = Enum.Font.FredokaOne
+	label.TextSize = 20
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = mainFrame
+	return label
+end
+
+local function createTextBox(placeholder, pos)
+	local textBox = Instance.new("TextBox")
+	textBox.Size = UDim2.new(0, 100, 0, 30)
+	textBox.Position = pos
+	textBox.PlaceholderText = placeholder
+	textBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	textBox.Font = Enum.Font.FredokaOne
+	textBox.TextSize = 18
+	textBox.ClearTextOnFocus = false
+	textBox.Parent = mainFrame
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 5)
+	corner.Parent = textBox
+	return textBox
+end
+
+local function createButton(text, pos, callback)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(0, 120, 0, 30)
+	button.Position = pos
+	button.Text = text
+	button.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Font = Enum.Font.FredokaOne
+	button.TextSize = 18
+	button.Parent = mainFrame
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = button
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = Color3.new(1, 1, 1)
+	stroke.Parent = button
+	button.MouseButton1Click:Connect(callback)
+	return button
+end
+
+local function updateStrokeColors(parent)
+	for _, obj in pairs(parent:GetDescendants()) do
+		if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+			local textColor = obj.TextColor3
+			if textColor == Color3.new(1, 1, 1) or textColor == Color3.fromRGB(255, 255, 255) then
+				local stroke = obj:FindFirstChildOfClass("UIStroke")
+				if stroke then
+					stroke.Color = Color3.new(0, 0, 0)
+				end
+			end
+		end
+	end
+end
+
+createLabel("💰 Add Sheckles", UDim2.new(0, 15, 0, 40))
+local shecklesBox = createTextBox("Amount", UDim2.new(0, 240, 0, 40))
+createButton("Give", UDim2.new(0, 360, 0, 40), function()
+	local amount = tonumber(shecklesBox.Text)
+	if amount and amount > 0 then
+		local stats = player:FindFirstChild("leaderstats")
+		if stats then
+			local sheckles = stats:FindFirstChild("Sheckles")
+			if sheckles and sheckles:IsA("NumberValue") then
+				sheckles.Value += amount
+			end
+		end
+	end
+end)
+
+createLabel("🏃‍♂️ Set Speed", UDim2.new(0, 15, 0, 85))
+local speedBox = createTextBox("Speed", UDim2.new(0, 240, 0, 85))
+createButton("Apply Speed", UDim2.new(0, 360, 0, 85), function()
+	local speed = tonumber(speedBox.Text)
+	if speed and speed > 0 then
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.WalkSpeed = speed
+		end
+	end
+end)
+
+createLabel("🦘 Infinite Jump", UDim2.new(0, 15, 0, 130))
+local infiniteJump = false
+createButton("Toggle Jump", UDim2.new(0, 240, 0, 130), function()
+	infiniteJump = not infiniteJump
+end)
+
+UIS.InputBegan:Connect(function(input, gpe)
+	if not gpe and infiniteJump and input.KeyCode == Enum.KeyCode.Space then
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	end
+end)
+
+local autoBuying = false
+createButton("Auto Buy Carrot", UDim2.new(0, 15, 0, 175), function()
+	autoBuying = not autoBuying
+	if autoBuying then
+		task.spawn(function()
+			while autoBuying do
+				local path = playerGui:FindFirstChild("Seed_Shop")
+				if path then
+					local btn = path.Frame.ScrollingFrame.Carrot.Main_Frame.Frame.Sheckles_Buy
+					local inStock = btn:FindFirstChild("In_Stock")
+					if inStock and inStock.Visible and btn:IsA("ImageButton") then
+						btn:Activate()
+					end
+				end
+				task.wait(0.2)
+			end
+		end)
+	end
+end)
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Text = "X"
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Font = Enum.Font.FredokaOne
+closeBtn.TextSize = 20
+closeBtn.Parent = mainFrame
+
+local cornerX = Instance.new("UICorner")
+cornerX.CornerRadius = UDim.new(0, 6)
+cornerX.Parent = closeBtn
+
+local strokeX = Instance.new("UIStroke")
+strokeX.Thickness = 2
+strokeX.Color = Color3.new(1, 1, 1)
+strokeX.Parent = closeBtn
+
+closeBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+end)
+
+UIS.InputBegan:Connect(function(input, gp)
+	if not gp and input.KeyCode == Enum.KeyCode.Y then
+		mainFrame.Visible = true
+	end
+end)
+
+updateStrokeColors(mainFrame)
