@@ -159,7 +159,6 @@ function createButton(text, pos, callback)
 	stroke.Thickness = 2
 	stroke.Color = Color3.fromRGB(0,255,200)
 	stroke.Parent = button
-
 	button.MouseEnter:Connect(function()
 		TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0,255,170), Size = UDim2.new(0, 130, 0, 34)}):Play()
 		TweenService:Create(stroke, TweenInfo.new(0.15), {Thickness = 3}):Play()
@@ -229,33 +228,54 @@ end)
 createLabel("🕊️ Fly Mode [F]", UDim2.new(0, 15, 0, 220))
 local flying = false
 local flySpeed = 50
-createButton("Toggle Fly", UDim2.new(0, 240, 0, 220), function()
+local flyFast = 100
+local function startFly()
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	if not root then return end
+	local bv = Instance.new("BodyVelocity", root)
+	bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+	bv.Velocity = Vector3.zero
+	local bg = Instance.new("BodyGyro", root)
+	bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+	bg.CFrame = workspace.CurrentCamera.CFrame
+	local connection
+	connection = RunService.RenderStepped:Connect(function()
+		if not flying or not root or not root.Parent then
+			bv:Destroy()
+			bg:Destroy()
+			connection:Disconnect()
+			return
+		end
+		local moveDir = Vector3.zero
+		if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + workspace.CurrentCamera.CFrame.LookVector end
+		if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - workspace.CurrentCamera.CFrame.LookVector end
+		if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - workspace.CurrentCamera.CFrame.RightVector end
+		if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + workspace.CurrentCamera.CFrame.RightVector end
+		if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + workspace.CurrentCamera.CFrame.UpVector end
+		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - workspace.CurrentCamera.CFrame.UpVector end
+		local currentSpeed = UIS:IsKeyDown(Enum.KeyCode.LeftShift) and flyFast or flySpeed
+		if moveDir.Magnitude > 0 then
+			bv.Velocity = moveDir.Unit * currentSpeed
+		else
+			bv.Velocity = Vector3.zero
+		end
+		bg.CFrame = workspace.CurrentCamera.CFrame
+	end)
+end
+UIS.InputBegan:Connect(function(input, gp)
+	if not gp and input.KeyCode == Enum.KeyCode.F then
+		flying = not flying
+		if flying then
+			startFly()
+		end
+	end
+end)
+
+createButton("Toggle Fly", UDim2.new(0, 240, 0, 220), function()
+	flying = not flying
 	if flying then
-		if root:FindFirstChild("BodyGyro") then root.BodyGyro:Destroy() end
-		if root:FindFirstChild("BodyVelocity") then root.BodyVelocity:Destroy() end
-		flying = false
-	else
-		local bg = Instance.new("BodyGyro", root)
-		local bv = Instance.new("BodyVelocity", root)
-		bg.P = 9e4
-		bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-		bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-		flying = true
-		spawn(function()
-			while flying and root and root.Parent do
-				local move = Vector3.zero
-				if UIS:IsKeyDown(Enum.KeyCode.W) then move += workspace.CurrentCamera.CFrame.LookVector end
-				if UIS:IsKeyDown(Enum.KeyCode.S) then move -= workspace.CurrentCamera.CFrame.LookVector end
-				if UIS:IsKeyDown(Enum.KeyCode.A) then move -= workspace.CurrentCamera.CFrame.RightVector end
-				if UIS:IsKeyDown(Enum.KeyCode.D) then move += workspace.CurrentCamera.CFrame.RightVector end
-				bv.Velocity = move.Magnitude > 0 and move.Unit * flySpeed or Vector3.zero
-				bg.CFrame = workspace.CurrentCamera.CFrame
-				wait()
-			end
-		end)
+		startFly()
 	end
 end)
 
@@ -325,6 +345,18 @@ RunService.Stepped:Connect(function()
 			end
 		end
 	end
+end)
+
+local infiniteJump = false
+UIS.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.M then
+        infiniteJump = not infiniteJump
+    end
+end)
+UIS.JumpRequest:Connect(function()
+    if infiniteJump and player.Character and player.Character:FindFirstChildWhichIsA("Humanoid") then
+        player.Character:FindFirstChildWhichIsA("Humanoid"):ChangeState("Jumping")
+    end
 end)
 
 local closeBtn = Instance.new("TextButton")
