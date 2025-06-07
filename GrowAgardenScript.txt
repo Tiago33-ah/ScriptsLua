@@ -4,6 +4,7 @@ if game.PlaceId ~= PLACE_ID then return end
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -15,36 +16,44 @@ screenGui.Parent = playerGui
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 600, 0, 360)
-mainFrame.Position = UDim2.new(0.5, -300, 0.5, -180)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.Position = UDim2.new(0.5, -300, 1.2, -180)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,40)
+mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = false
+mainFrame.Visible = false
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
+corner.CornerRadius = UDim.new(0, 14)
 corner.Parent = mainFrame
+
+local glow = Instance.new("UIStroke")
+glow.Color = Color3.fromRGB(0,255,200)
+glow.Thickness = 3
+glow.Transparency = 0.5
+glow.Parent = mainFrame
 
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, 30)
-topBar.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+topBar.Size = UDim2.new(1, 0, 0, 34)
+topBar.BackgroundColor3 = Color3.fromRGB(55, 55, 75)
 topBar.BorderSizePixel = 0
 topBar.Parent = mainFrame
 
 local topCorner = Instance.new("UICorner")
-topCorner.CornerRadius = UDim.new(0, 10)
+topCorner.CornerRadius = UDim.new(0, 14)
 topCorner.Parent = topBar
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Text = "Aristocrat v1.02"
 titleLabel.Size = UDim2.new(1, -40, 1, 0)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Position = UDim2.new(0, 15, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Font = Enum.Font.FredokaOne
-titleLabel.TextSize = 20
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 21
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = topBar
 
@@ -63,67 +72,108 @@ topBar.InputBegan:Connect(function(input)
 		end)
 	end
 end)
-
 topBar.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseMovement then
 		dragInput = input
 	end
 end)
-
 UIS.InputChanged:Connect(function(input)
 	if input == dragInput and dragging then
 		local delta = input.Position - dragStart
 		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
 end)
-local function createLabel(text, pos)
+
+function animateOpen()
+	mainFrame.Visible = true
+	TweenService:Create(mainFrame, TweenInfo.new(0.55, Enum.EasingStyle.Back), {Position = UDim2.new(0.5, -300, 0.5, -180), BackgroundTransparency = 0.1}):Play()
+	for _,ui in ipairs(mainFrame:GetChildren()) do
+		if ui:IsA("GuiObject") then
+			ui.BackgroundTransparency = 1
+			TweenService:Create(ui, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {BackgroundTransparency = 0}):Play()
+		end
+	end
+end
+function animateClose()
+	TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {Position = UDim2.new(0.5, -300, 1.2, -180), BackgroundTransparency = 0.5}):Play()
+	wait(0.4)
+	mainFrame.Visible = false
+end
+
+spawn(function()
+	while true do
+		TweenService:Create(glow, TweenInfo.new(1, Enum.EasingStyle.Sine), {Transparency = 0.2}):Play()
+		wait(1)
+		TweenService:Create(glow, TweenInfo.new(1, Enum.EasingStyle.Sine), {Transparency = 0.6}):Play()
+		wait(1)
+	end
+end)
+
+function createLabel(text, pos)
 	local label = Instance.new("TextLabel")
 	label.Text = text
 	label.Size = UDim2.new(0, 200, 0, 30)
 	label.Position = pos
 	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.Font = Enum.Font.FredokaOne
-	label.TextSize = 20
+	label.TextColor3 = Color3.fromRGB(255,255,255)
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 21
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = mainFrame
 	return label
 end
 
-local function createTextBox(placeholder, pos)
+function createTextBox(placeholder, pos)
 	local textBox = Instance.new("TextBox")
 	textBox.Size = UDim2.new(0, 100, 0, 30)
 	textBox.Position = pos
 	textBox.PlaceholderText = placeholder
-	textBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-	textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-	textBox.Font = Enum.Font.FredokaOne
+	textBox.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+	textBox.TextColor3 = Color3.fromRGB(255,255,255)
+	textBox.Font = Enum.Font.Gotham
 	textBox.TextSize = 18
 	textBox.ClearTextOnFocus = false
+	textBox.BackgroundTransparency = 0.15
 	textBox.Parent = mainFrame
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 5)
+	corner.CornerRadius = UDim.new(0, 7)
 	corner.Parent = textBox
 	return textBox
 end
 
-local function createButton(text, pos, callback)
+function createButton(text, pos, callback)
 	local button = Instance.new("TextButton")
 	button.Size = UDim2.new(0, 120, 0, 30)
 	button.Position = pos
 	button.Text = text
-	button.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+	button.BackgroundColor3 = Color3.fromRGB(0, 200, 140)
 	button.TextColor3 = Color3.new(1, 1, 1)
-	button.Font = Enum.Font.FredokaOne
+	button.Font = Enum.Font.GothamBold
 	button.TextSize = 18
 	button.Parent = mainFrame
+	button.AutoButtonColor = false
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
+	corner.CornerRadius = UDim.new(0, 7)
 	corner.Parent = button
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 2
-	stroke.Color = Color3.new(1, 1, 1)
+	stroke.Color = Color3.fromRGB(0,255,200)
 	stroke.Parent = button
+
+	button.MouseEnter:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0,255,170), Size = UDim2.new(0, 130, 0, 34)}):Play()
+		TweenService:Create(stroke, TweenInfo.new(0.15), {Thickness = 3}):Play()
+	end)
+	button.MouseLeave:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0,200,140), Size = UDim2.new(0, 120, 0, 30)}):Play()
+		TweenService:Create(stroke, TweenInfo.new(0.15), {Thickness = 2}):Play()
+	end)
+	button.MouseButton1Down:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(0, 115, 0, 28)}):Play()
+	end)
+	button.MouseButton1Up:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.1), {Size = UDim2.new(0, 130, 0, 34)}):Play()
+	end)
 	button.MouseButton1Click:Connect(callback)
 	return button
 end
@@ -175,6 +225,7 @@ createButton("Apply Gravity", UDim2.new(0, 360, 0, 175), function()
 		workspace.Gravity = g
 	end
 end)
+
 createLabel("🕊️ Fly Mode [F]", UDim2.new(0, 15, 0, 220))
 local flying = false
 local flySpeed = 50
@@ -193,16 +244,16 @@ createButton("Toggle Fly", UDim2.new(0, 240, 0, 220), function()
 		bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
 		bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
 		flying = true
-		task.spawn(function()
+		spawn(function()
 			while flying and root and root.Parent do
 				local move = Vector3.zero
 				if UIS:IsKeyDown(Enum.KeyCode.W) then move += workspace.CurrentCamera.CFrame.LookVector end
 				if UIS:IsKeyDown(Enum.KeyCode.S) then move -= workspace.CurrentCamera.CFrame.LookVector end
 				if UIS:IsKeyDown(Enum.KeyCode.A) then move -= workspace.CurrentCamera.CFrame.RightVector end
 				if UIS:IsKeyDown(Enum.KeyCode.D) then move += workspace.CurrentCamera.CFrame.RightVector end
-				bv.Velocity = move.Unit * flySpeed
+				bv.Velocity = move.Magnitude > 0 and move.Unit * flySpeed or Vector3.zero
 				bg.CFrame = workspace.CurrentCamera.CFrame
-				task.wait()
+				wait()
 			end
 		end)
 	end
@@ -213,7 +264,7 @@ local autoBuy = false
 createButton("Toggle Buy", UDim2.new(0, 240, 0, 265), function()
 	autoBuy = not autoBuy
 	if autoBuy then
-		task.spawn(function()
+		spawn(function()
 			while autoBuy do
 				local ui = playerGui:FindFirstChild("Seed_Shop")
 				if ui then
@@ -222,7 +273,7 @@ createButton("Toggle Buy", UDim2.new(0, 240, 0, 265), function()
 						btn:Activate()
 					end
 				end
-				task.wait(0.3)
+				wait(0.3)
 			end
 		end)
 	end
@@ -266,7 +317,6 @@ UIS.InputBegan:Connect(function(input)
 		noclip = not noclip
 	end
 end)
-
 RunService.Stepped:Connect(function()
 	if noclip and player.Character then
 		for _, part in pairs(player.Character:GetDescendants()) do
@@ -276,18 +326,19 @@ RunService.Stepped:Connect(function()
 		end
 	end
 end)
+
 local closeBtn = Instance.new("TextButton")
 closeBtn.Text = "X"
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -35, 0, 0)
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+closeBtn.Size = UDim2.new(0, 34, 0, 34)
+closeBtn.Position = UDim2.new(1, -40, 0, 0)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 45, 75)
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.Font = Enum.Font.FredokaOne
+closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 20
 closeBtn.Parent = topBar
 
 local cornerX = Instance.new("UICorner")
-cornerX.CornerRadius = UDim.new(0, 6)
+cornerX.CornerRadius = UDim.new(0, 9)
 cornerX.Parent = closeBtn
 
 local strokeX = Instance.new("UIStroke")
@@ -295,12 +346,31 @@ strokeX.Thickness = 2
 strokeX.Color = Color3.new(1, 1, 1)
 strokeX.Parent = closeBtn
 
+closeBtn.MouseEnter:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(255,80,100), Size = UDim2.new(0,40,0,38)}):Play()
+end)
+closeBtn.MouseLeave:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(255,45,75), Size = UDim2.new(0,34,0,34)}):Play()
+end)
+closeBtn.MouseButton1Down:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.1), {Size = UDim2.new(0,32,0,30)}):Play()
+end)
+closeBtn.MouseButton1Up:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.1), {Size = UDim2.new(0,40,0,38)}):Play()
+end)
 closeBtn.MouseButton1Click:Connect(function()
-	mainFrame.Visible = false
+	animateClose()
 end)
 
 UIS.InputBegan:Connect(function(input, gp)
 	if not gp and input.KeyCode == Enum.KeyCode.Y then
-		mainFrame.Visible = not mainFrame.Visible
+		if mainFrame.Visible then
+			animateClose()
+		else
+			animateOpen()
+		end
 	end
 end)
+
+wait(0.2)
+animateOpen()
