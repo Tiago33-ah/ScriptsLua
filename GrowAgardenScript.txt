@@ -3,18 +3,19 @@ if game.PlaceId ~= PLACE_ID then return end
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "GameEnhancerUI"
+screenGui.Name = "AristocratUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 520, 0, 260)
-mainFrame.Position = UDim2.new(0.5, -260, 0.5, -130)
+mainFrame.Size = UDim2.new(0, 600, 0, 360)
+mainFrame.Position = UDim2.new(0.5, -300, 0.5, -180)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -35,6 +36,17 @@ topBar.Parent = mainFrame
 local topCorner = Instance.new("UICorner")
 topCorner.CornerRadius = UDim.new(0, 10)
 topCorner.Parent = topBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Text = "Aristocrat v1.02"
+titleLabel.Size = UDim2.new(1, -40, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.FredokaOne
+titleLabel.TextSize = 20
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = topBar
 
 local dragging = false
 local dragInput, dragStart, startPos
@@ -64,7 +76,6 @@ UIS.InputChanged:Connect(function(input)
 		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
 end)
-
 local function createLabel(text, pos)
 	local label = Instance.new("TextLabel")
 	label.Text = text
@@ -117,20 +128,6 @@ local function createButton(text, pos, callback)
 	return button
 end
 
-local function updateStrokeColors(parent)
-	for _, obj in pairs(parent:GetDescendants()) do
-		if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-			local textColor = obj.TextColor3
-			if textColor == Color3.new(1, 1, 1) or textColor == Color3.fromRGB(255, 255, 255) then
-				local stroke = obj:FindFirstChildOfClass("UIStroke")
-				if stroke then
-					stroke.Color = Color3.new(0, 0, 0)
-				end
-			end
-		end
-	end
-end
-
 createLabel("💰 Add Sheckles", UDim2.new(0, 15, 0, 40))
 local shecklesBox = createTextBox("Amount", UDim2.new(0, 240, 0, 40))
 createButton("Give", UDim2.new(0, 360, 0, 40), function()
@@ -146,62 +143,148 @@ createButton("Give", UDim2.new(0, 360, 0, 40), function()
 	end
 end)
 
-createLabel("🏃‍♂️ Set Speed", UDim2.new(0, 15, 0, 85))
+createLabel("🏃‍♂️ Speed", UDim2.new(0, 15, 0, 85))
 local speedBox = createTextBox("Speed", UDim2.new(0, 240, 0, 85))
 createButton("Apply Speed", UDim2.new(0, 360, 0, 85), function()
 	local speed = tonumber(speedBox.Text)
-	if speed and speed > 0 then
-		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if speed then
+		local humanoid = player.Character and player.Character:FindFirstChildWhichIsA("Humanoid")
 		if humanoid then
 			humanoid.WalkSpeed = speed
 		end
 	end
 end)
 
-createLabel("🦘 Infinite Jump", UDim2.new(0, 15, 0, 130))
-local infiniteJump = false
-createButton("Toggle Jump", UDim2.new(0, 240, 0, 130), function()
-	infiniteJump = not infiniteJump
-end)
-
-UIS.InputBegan:Connect(function(input, gpe)
-	if not gpe and infiniteJump and input.KeyCode == Enum.KeyCode.Space then
-		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+createLabel("🦘 JumpPower", UDim2.new(0, 15, 0, 130))
+local jumpBox = createTextBox("JumpPower", UDim2.new(0, 240, 0, 130))
+createButton("Apply Jump", UDim2.new(0, 360, 0, 130), function()
+	local jump = tonumber(jumpBox.Text)
+	if jump then
+		local humanoid = player.Character and player.Character:FindFirstChildWhichIsA("Humanoid")
 		if humanoid then
-			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			humanoid.JumpPower = jump
 		end
 	end
 end)
 
-local autoBuying = false
-createButton("Auto Buy Carrot", UDim2.new(0, 15, 0, 175), function()
-	autoBuying = not autoBuying
-	if autoBuying then
+createLabel("🌌 Gravity", UDim2.new(0, 15, 0, 175))
+local gravityBox = createTextBox("Gravity", UDim2.new(0, 240, 0, 175))
+createButton("Apply Gravity", UDim2.new(0, 360, 0, 175), function()
+	local g = tonumber(gravityBox.Text)
+	if g then
+		workspace.Gravity = g
+	end
+end)
+createLabel("🕊️ Fly Mode [F]", UDim2.new(0, 15, 0, 220))
+local flying = false
+local flySpeed = 50
+createButton("Toggle Fly", UDim2.new(0, 240, 0, 220), function()
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	if flying then
+		if root:FindFirstChild("BodyGyro") then root.BodyGyro:Destroy() end
+		if root:FindFirstChild("BodyVelocity") then root.BodyVelocity:Destroy() end
+		flying = false
+	else
+		local bg = Instance.new("BodyGyro", root)
+		local bv = Instance.new("BodyVelocity", root)
+		bg.P = 9e4
+		bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+		bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+		flying = true
 		task.spawn(function()
-			while autoBuying do
-				local path = playerGui:FindFirstChild("Seed_Shop")
-				if path then
-					local btn = path.Frame.ScrollingFrame.Carrot.Main_Frame.Frame.Sheckles_Buy
-					local inStock = btn:FindFirstChild("In_Stock")
-					if inStock and inStock.Visible and btn:IsA("ImageButton") then
-						btn:Activate()
-					end
-				end
-				task.wait(0.2)
+			while flying and root and root.Parent do
+				local move = Vector3.zero
+				if UIS:IsKeyDown(Enum.KeyCode.W) then move += workspace.CurrentCamera.CFrame.LookVector end
+				if UIS:IsKeyDown(Enum.KeyCode.S) then move -= workspace.CurrentCamera.CFrame.LookVector end
+				if UIS:IsKeyDown(Enum.KeyCode.A) then move -= workspace.CurrentCamera.CFrame.RightVector end
+				if UIS:IsKeyDown(Enum.KeyCode.D) then move += workspace.CurrentCamera.CFrame.RightVector end
+				bv.Velocity = move.Unit * flySpeed
+				bg.CFrame = workspace.CurrentCamera.CFrame
+				task.wait()
 			end
 		end)
 	end
 end)
 
+createLabel("🌱 Auto Buy Carrot", UDim2.new(0, 15, 0, 265))
+local autoBuy = false
+createButton("Toggle Buy", UDim2.new(0, 240, 0, 265), function()
+	autoBuy = not autoBuy
+	if autoBuy then
+		task.spawn(function()
+			while autoBuy do
+				local ui = playerGui:FindFirstChild("Seed_Shop")
+				if ui then
+					local btn = ui.Frame.ScrollingFrame.Carrot.Main_Frame.Frame.Sheckles_Buy
+					if btn and btn:IsA("ImageButton") and btn.In_Stock.Visible then
+						btn:Activate()
+					end
+				end
+				task.wait(0.3)
+			end
+		end)
+	end
+end)
+
+createLabel("👁️ ESP", UDim2.new(0, 15, 0, 310))
+createButton("Toggle ESP", UDim2.new(0, 240, 0, 310), function()
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr ~= player then
+			local char = plr.Character
+			if char and not char:FindFirstChild("ESPBox") then
+				local box = Instance.new("BoxHandleAdornment", char)
+				box.Name = "ESPBox"
+				box.Adornee = char:FindFirstChild("HumanoidRootPart")
+				box.AlwaysOnTop = true
+				box.ZIndex = 10
+				box.Size = Vector3.new(4, 6, 4)
+				box.Color3 = Color3.new(1, 0, 0)
+				box.Transparency = 0.5
+			end
+		end
+	end
+end)
+
+createLabel("📍 Teleport To Player", UDim2.new(0, 15, 0, 355))
+local tpBox = createTextBox("PlayerName", UDim2.new(0, 240, 0, 355))
+createButton("Teleport", UDim2.new(0, 360, 0, 355), function()
+	local targetName = tpBox.Text
+	local targetPlayer = Players:FindFirstChild(targetName)
+	if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			root.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
+		end
+	end
+end)
+
+local noclip = false
+UIS.InputBegan:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.N then
+		noclip = not noclip
+	end
+end)
+
+RunService.Stepped:Connect(function()
+	if noclip and player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Text = "X"
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.Position = UDim2.new(1, -35, 0, 0)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.Font = Enum.Font.FredokaOne
 closeBtn.TextSize = 20
-closeBtn.Parent = mainFrame
+closeBtn.Parent = topBar
 
 local cornerX = Instance.new("UICorner")
 cornerX.CornerRadius = UDim.new(0, 6)
@@ -218,8 +301,6 @@ end)
 
 UIS.InputBegan:Connect(function(input, gp)
 	if not gp and input.KeyCode == Enum.KeyCode.Y then
-		mainFrame.Visible = true
+		mainFrame.Visible = not mainFrame.Visible
 	end
 end)
-
-updateStrokeColors(mainFrame)
