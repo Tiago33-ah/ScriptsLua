@@ -94,7 +94,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local gui = player:WaitForChild("PlayerGui")
 
-local flySpeed = 250
+local flySpeed = 1000
 local canHit = true
 local isFlying = false
 local moveMode = "Teleportation"
@@ -403,7 +403,7 @@ Tabs.Main:AddSlider("FlySpeedSlider", {
 	Title = "Gliding Speed",
 	Default = 300,
 	Min = 50,
-	Max = 500,
+	Max = 5000,
 	Rounding = 0,
 	Callback = function(value)
 		flySpeed = value
