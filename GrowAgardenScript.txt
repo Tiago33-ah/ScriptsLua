@@ -1,5 +1,4 @@
-local PLACE_ID = 126884695634066
-if game.PlaceId ~= PLACE_ID then return end
+
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
