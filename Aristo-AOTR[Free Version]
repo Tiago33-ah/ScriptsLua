@@ -16,7 +16,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 local Window = Fluent:CreateWindow({
     Title = "aristo.lua",
-    SubTitle = "Attack on Titan: Revolution ( Free Version [Beta])",
+    SubTitle = "Attack on Titan: Revolution ( Paid Version Open-Source )",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = false,
@@ -94,7 +94,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local gui = player:WaitForChild("PlayerGui")
 
-local flySpeed = 1000
+local flySpeed = 250
 local canHit = true
 local isFlying = false
 local moveMode = "Teleportation"
@@ -403,7 +403,7 @@ Tabs.Main:AddSlider("FlySpeedSlider", {
 	Title = "Gliding Speed",
 	Default = 300,
 	Min = 50,
-	Max = 5000,
+	Max = 500,
 	Rounding = 0,
 	Callback = function(value)
 		flySpeed = value
