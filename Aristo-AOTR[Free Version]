@@ -16,7 +16,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 local Window = Fluent:CreateWindow({
     Title = "aristo.lua",
-    SubTitle = "Attack on Titan: Revolution ( Free Version [Beta])",
+    SubTitle = "Attack on Titan: Revolution ( Paid Version [Beta])",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = false,
