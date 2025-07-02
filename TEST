@@ -1,0 +1,181 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+
+local player = Players.LocalPlayer
+
+-- ✅ Chargement Rayfield
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+	Name = "My Game GUI",
+	LoadingTitle = "Loading GUI...",
+	LoadingSubtitle = "By Akashi",
+	ConfigurationSaving = {
+		Enabled = true,
+		FolderName = "MyGameData",
+		FileName = "RayfieldSettings"
+	},
+	KeySystem = false
+})
+
+-- 🟦 Onglet Main
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-- 🔁 Auto Click
+local autoClick = false
+local clickConnection
+
+MainTab:CreateToggle({
+	Name = "Auto Click",
+	CurrentValue = false,
+	Callback = function(state)
+		autoClick = state
+		if autoClick then
+			clickConnection = RunService.RenderStepped:Connect(function()
+				pcall(function()
+					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Clicker"):FireServer()
+				end)
+			end)
+		elseif clickConnection then
+			clickConnection:Disconnect()
+			clickConnection = nil
+		end
+	end
+})
+
+-- 🔁 Auto Rebirth
+local autoRebirth = false
+local rebirthThread
+
+MainTab:CreateToggle({
+	Name = "Auto Rebirth (1 sec)",
+	CurrentValue = false,
+	Callback = function(state)
+		autoRebirth = state
+		if autoRebirth then
+			rebirthThread = task.spawn(function()
+				while autoRebirth do
+					pcall(function()
+						ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Rebirth"):FireServer()
+					end)
+					task.wait(1)
+				end
+			end)
+		elseif rebirthThread then
+			task.cancel(rebirthThread)
+		end
+	end
+})
+
+-- 🐾 Auto Equip Best Pet
+local autoPet = false
+local petThread
+
+MainTab:CreateToggle({
+	Name = "Auto Equip Best Pet",
+	CurrentValue = false,
+	Callback = function(state)
+		autoPet = state
+		if autoPet then
+			petThread = task.spawn(function()
+				while autoPet do
+					pcall(function()
+						ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Pet"):FireServer("Equip", {})
+					end)
+					task.wait(3)
+				end
+			end)
+		elseif petThread then
+			task.cancel(petThread)
+		end
+	end
+})
+
+-- 🟨 Onglet Player
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+
+-- WalkSpeed & JumpPower valeurs sauvegardées
+local walkSpeed = 16
+local jumpPower = 50
+
+-- Appliquer automatiquement au respawn
+local function applyStats()
+	local char = player.Character or player.CharacterAdded:Wait()
+	local humanoid = char:WaitForChild("Humanoid")
+	humanoid.WalkSpeed = walkSpeed
+	humanoid.JumpPower = jumpPower
+end
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.2)
+	applyStats()
+end)
+
+-- 🔘 Slider WalkSpeed
+PlayerTab:CreateSlider({
+	Name = "WalkSpeed",
+	Range = {16, 100},
+	Increment = 1,
+	Suffix = "Speed",
+	CurrentValue = 16,
+	Callback = function(val)
+		walkSpeed = val
+		local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if h then h.WalkSpeed = val end
+	end
+})
+
+-- 🔘 Slider JumpPower
+PlayerTab:CreateSlider({
+	Name = "JumpPower",
+	Range = {50, 200},
+	Increment = 5,
+	Suffix = "Power",
+	CurrentValue = 50,
+	Callback = function(val)
+		jumpPower = val
+		local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if h then h.JumpPower = val end
+	end
+})
+
+-- 🔲 Toggle NoClip
+local noclip = false
+local noclipConn
+
+PlayerTab:CreateToggle({
+	Name = "NoClip",
+	CurrentValue = false,
+	Callback = function(state)
+		noclip = state
+		if noclip then
+			noclipConn = RunService.Stepped:Connect(function()
+				local char = player.Character
+				if char then
+					for _, part in pairs(char:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.CanCollide = false
+						end
+					end
+				end
+			end)
+		elseif noclipConn then
+			noclipConn:Disconnect()
+			noclipConn = nil
+		end
+	end
+})
+
+-- 💤 Anti-AFK
+PlayerTab:CreateButton({
+	Name = "Enable Anti-AFK",
+	Callback = function()
+		player.Idled:Connect(function()
+			VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+			task.wait(1)
+			VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+		end)
+	end
+})
