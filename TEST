@@ -1,147 +1,180 @@
+-- ⚙️ SERVICES
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
 
--- ✅ Chargement Rayfield
+-- 🌐 Ton Webhook Discord
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1390001360514191442/KbpJPN9mvVw3aXGR4cWmvwXbr4YdNcS6p1OMxiw-81iWAGpX96ojd8QtcYEDvhQQWmuJ"
+
+-- 🛠️ FONCTION : ENVOYER WEBHOOK
+local function sendWebhook(isRebirth)
+	local data = player:FindFirstChild("Data")
+	if not data then return end
+
+	local stats = data:FindFirstChild("PlayerData")
+	if not stats then return end
+
+	local clicks = stats:FindFirstChild("Currency")
+	local rebirths = stats:FindFirstChild("Currency2")
+	if not clicks or not rebirths then return end
+
+	local payload = {
+		username = "Stat Tracker",
+		embeds = {{
+			title = isRebirth and "🔥 Rebirth!" or "📊 Player Stats",
+			color = isRebirth and 15158332 or 3447003,
+			fields = {
+				{name = "👤 Player", value = player.Name, inline = true},
+				{name = "🖱️ Clicks", value = tostring(clicks.Value), inline = true},
+				{name = "🔁 Rebirths", value = tostring(rebirths.Value), inline = true},
+			},
+			footer = { text = "LocalScript Webhook" },
+			timestamp = DateTime.now():ToIsoDate()
+		}}
+	}
+
+	pcall(function()
+		HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode(payload), Enum.HttpContentType.ApplicationJson)
+	end)
+end
+
+-- 🔁 Détecter un Rebirth (local)
+local rebirthEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Rebirth")
+
+rebirthEvent.OnClientEvent:Connect(function()
+	sendWebhook(true)
+end)
+
+-- ⏱️ Webhook auto toutes les 10 secondes
+task.spawn(function()
+	while true do
+		sendWebhook(false)
+		task.wait(10)
+	end
+end)
+
+-- 🧩 RAYFIELD GUI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-	Name = "My Game GUI",
-	LoadingTitle = "Loading GUI...",
-	LoadingSubtitle = "By Akashi",
+	Name = "My Auto GUI",
+	LoadingTitle = "Loading...",
+	LoadingSubtitle = "Webhook + GUI",
 	ConfigurationSaving = {
 		Enabled = true,
-		FolderName = "MyGameData",
-		FileName = "RayfieldSettings"
+		FolderName = "MyAutoSettings",
+		FileName = "UserConfig"
 	},
 	KeySystem = false
 })
 
--- 🟦 Onglet Main
-local MainTab = Window:CreateTab("Main", 4483362458)
+-- 📂 MAIN
+local Main = Window:CreateTab("Main", 4483362458)
 
--- 🔁 Auto Click
+-- 🔘 Auto Click
 local autoClick = false
-local clickConnection
+local clickConn
 
-MainTab:CreateToggle({
+Main:CreateToggle({
 	Name = "Auto Click",
 	CurrentValue = false,
 	Callback = function(state)
 		autoClick = state
 		if autoClick then
-			clickConnection = RunService.RenderStepped:Connect(function()
+			clickConn = RunService.RenderStepped:Connect(function()
 				pcall(function()
 					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Clicker"):FireServer()
 				end)
 			end)
-		elseif clickConnection then
-			clickConnection:Disconnect()
-			clickConnection = nil
+		elseif clickConn then
+			clickConn:Disconnect()
+			clickConn = nil
 		end
 	end
 })
 
--- 🔁 Auto Rebirth
+-- 🔘 Auto Rebirth
 local autoRebirth = false
-local rebirthThread
 
-MainTab:CreateToggle({
-	Name = "Auto Rebirth (1 sec)",
+Main:CreateToggle({
+	Name = "Auto Rebirth",
 	CurrentValue = false,
 	Callback = function(state)
 		autoRebirth = state
-		if autoRebirth then
-			rebirthThread = task.spawn(function()
-				while autoRebirth do
-					pcall(function()
-						ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Rebirth"):FireServer()
-					end)
-					task.wait(1)
-				end
-			end)
-		elseif rebirthThread then
-			task.cancel(rebirthThread)
-		end
+		task.spawn(function()
+			while autoRebirth do
+				pcall(function()
+					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Rebirth"):FireServer()
+				end)
+				task.wait(1)
+			end
+		end)
 	end
 })
 
--- 🐾 Auto Equip Best Pet
+-- 🔘 Auto Equip Pet
 local autoPet = false
-local petThread
 
-MainTab:CreateToggle({
+Main:CreateToggle({
 	Name = "Auto Equip Best Pet",
 	CurrentValue = false,
 	Callback = function(state)
 		autoPet = state
-		if autoPet then
-			petThread = task.spawn(function()
-				while autoPet do
-					pcall(function()
-						ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Pet"):FireServer("Equip", {})
-					end)
-					task.wait(3)
-				end
-			end)
-		elseif petThread then
-			task.cancel(petThread)
-		end
+		task.spawn(function()
+			while autoPet do
+				pcall(function()
+					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Pet"):FireServer("Equip", {})
+				end)
+				task.wait(3)
+			end
+		end)
 	end
 })
 
--- 🟨 Onglet Player
+-- 📂 PLAYER
 local PlayerTab = Window:CreateTab("Player", 4483362458)
 
--- WalkSpeed & JumpPower valeurs sauvegardées
-local walkSpeed = 16
-local jumpPower = 50
+-- WalkSpeed / JumpPower
+local ws, jp = 16, 50
 
--- Appliquer automatiquement au respawn
-local function applyStats()
-	local char = player.Character or player.CharacterAdded:Wait()
-	local humanoid = char:WaitForChild("Humanoid")
-	humanoid.WalkSpeed = walkSpeed
-	humanoid.JumpPower = jumpPower
-end
-
-player.CharacterAdded:Connect(function()
-	task.wait(0.2)
-	applyStats()
-end)
-
--- 🔘 Slider WalkSpeed
 PlayerTab:CreateSlider({
 	Name = "WalkSpeed",
 	Range = {16, 100},
 	Increment = 1,
 	Suffix = "Speed",
-	CurrentValue = 16,
+	CurrentValue = ws,
 	Callback = function(val)
-		walkSpeed = val
-		local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if h then h.WalkSpeed = val end
+		ws = val
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum then hum.WalkSpeed = val end
 	end
 })
 
--- 🔘 Slider JumpPower
 PlayerTab:CreateSlider({
 	Name = "JumpPower",
 	Range = {50, 200},
 	Increment = 5,
 	Suffix = "Power",
-	CurrentValue = 50,
+	CurrentValue = jp,
 	Callback = function(val)
-		jumpPower = val
-		local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if h then h.JumpPower = val end
+		jp = val
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum then hum.JumpPower = val end
 	end
 })
 
--- 🔲 Toggle NoClip
+player.CharacterAdded:Connect(function()
+	task.wait(0.2)
+	local hum = player.Character:WaitForChild("Humanoid")
+	hum.WalkSpeed = ws
+	hum.JumpPower = jp
+end)
+
+-- ❌ NoClip
 local noclip = false
 local noclipConn
 
@@ -154,10 +187,8 @@ PlayerTab:CreateToggle({
 			noclipConn = RunService.Stepped:Connect(function()
 				local char = player.Character
 				if char then
-					for _, part in pairs(char:GetDescendants()) do
-						if part:IsA("BasePart") then
-							part.CanCollide = false
-						end
+					for _, p in pairs(char:GetDescendants()) do
+						if p:IsA("BasePart") then p.CanCollide = false end
 					end
 				end
 			end)
@@ -173,9 +204,9 @@ PlayerTab:CreateButton({
 	Name = "Enable Anti-AFK",
 	Callback = function()
 		player.Idled:Connect(function()
-			VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+			VirtualUser:Button2Down(Vector2.zero, workspace.CurrentCamera.CFrame)
 			task.wait(1)
-			VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+			VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera.CFrame)
 		end)
 	end
 })
