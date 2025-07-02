@@ -65,7 +65,7 @@ Main:CreateToggle({
 	end
 })
 
--- 🔘 Auto Equip Pet
+-- 🔘 Auto Equip Best Pet
 local autoPet = false
 
 Main:CreateToggle({
@@ -84,7 +84,7 @@ Main:CreateToggle({
 	end
 })
 
--- 🔘 Auto Open Event Egg (added)
+-- 🔘 Auto Open Event Egg
 local autoEgg = false
 
 Main:CreateToggle({
@@ -101,7 +101,7 @@ Main:CreateToggle({
 					}
 					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Egg"):InvokeServer(unpack(args))
 				end)
-				task.wait(3) -- délai entre chaque invocation, modifiable si tu veux
+				task.wait(3)
 			end
 		end)
 	end
