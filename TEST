@@ -1,61 +1,10 @@
 -- ⚙️ SERVICES
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
-
--- 🌐 Ton Webhook Discord
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1390001360514191442/KbpJPN9mvVw3aXGR4cWmvwXbr4YdNcS6p1OMxiw-81iWAGpX96ojd8QtcYEDvhQQWmuJ"
-
--- 🛠️ FONCTION : ENVOYER WEBHOOK
-local function sendWebhook(isRebirth)
-	local data = player:FindFirstChild("Data")
-	if not data then return end
-
-	local stats = data:FindFirstChild("PlayerData")
-	if not stats then return end
-
-	local clicks = stats:FindFirstChild("Currency")
-	local rebirths = stats:FindFirstChild("Currency2")
-	if not clicks or not rebirths then return end
-
-	local payload = {
-		username = "Stat Tracker",
-		embeds = {{
-			title = isRebirth and "🔥 Rebirth!" or "📊 Player Stats",
-			color = isRebirth and 15158332 or 3447003,
-			fields = {
-				{name = "👤 Player", value = player.Name, inline = true},
-				{name = "🖱️ Clicks", value = tostring(clicks.Value), inline = true},
-				{name = "🔁 Rebirths", value = tostring(rebirths.Value), inline = true},
-			},
-			footer = { text = "LocalScript Webhook" },
-			timestamp = DateTime.now():ToIsoDate()
-		}}
-	}
-
-	pcall(function()
-		HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode(payload), Enum.HttpContentType.ApplicationJson)
-	end)
-end
-
--- 🔁 Détecter un Rebirth (local)
-local rebirthEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Rebirth")
-
-rebirthEvent.OnClientEvent:Connect(function()
-	sendWebhook(true)
-end)
-
--- ⏱️ Webhook auto toutes les 10 secondes
-task.spawn(function()
-	while true do
-		sendWebhook(false)
-		task.wait(10)
-	end
-end)
 
 -- 🧩 RAYFIELD GUI
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
@@ -63,7 +12,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
 	Name = "My Auto GUI",
 	LoadingTitle = "Loading...",
-	LoadingSubtitle = "Webhook + GUI",
+	LoadingSubtitle = "GUI",
 	ConfigurationSaving = {
 		Enabled = true,
 		FolderName = "MyAutoSettings",
@@ -130,6 +79,29 @@ Main:CreateToggle({
 					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Pet"):FireServer("Equip", {})
 				end)
 				task.wait(3)
+			end
+		end)
+	end
+})
+
+-- 🔘 Auto Open Event Egg (added)
+local autoEgg = false
+
+Main:CreateToggle({
+	Name = "Auto Open Event Egg",
+	CurrentValue = false,
+	Callback = function(state)
+		autoEgg = state
+		task.spawn(function()
+			while autoEgg do
+				pcall(function()
+					local args = {
+						"tung tung tung",
+						1
+					}
+					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Egg"):InvokeServer(unpack(args))
+				end)
+				task.wait(3) -- délai entre chaque invocation, modifiable si tu veux
 			end
 		end)
 	end
