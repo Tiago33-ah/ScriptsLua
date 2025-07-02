@@ -101,11 +101,12 @@ Main:CreateToggle({
 					}
 					ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Egg"):InvokeServer(unpack(args))
 				end)
-				task.wait(3)
+				task.wait(0.2) -- ⏱️ Cooldown réduit à 0.2s
 			end
 		end)
 	end
 })
+
 
 -- 📂 PLAYER
 local PlayerTab = Window:CreateTab("Player", 4483362458)
