@@ -5,7 +5,7 @@ local Window = Rayfield:CreateWindow({
     LoadingSubtitle = "by AKASHI",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = nil,
+        FolderName = "",
         FileName = "PlayerCheatsConfig"
     },
     Discord = {
@@ -21,6 +21,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local flying = false
 local bodyVelocity, bodyGyro
+local flySpeed = 50
 
 local function startFly()
     if flying then return end
@@ -44,14 +45,15 @@ local function startFly()
         end
         local camCF = workspace.CurrentCamera.CFrame
         local moveVec = Vector3.new()
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + camCF.LookVector end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - camCF.LookVector end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - camCF.RightVector end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + camCF.RightVector end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then moveVec = moveVec + Vector3.new(0,1,0) end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) then moveVec = moveVec - Vector3.new(0,1,0) end
+        local uis = game:GetService("UserInputService")
+        if uis:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + camCF.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - camCF.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - camCF.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + camCF.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.Space) then moveVec = moveVec + Vector3.new(0,1,0) end
+        if uis:IsKeyDown(Enum.KeyCode.LeftControl) then moveVec = moveVec - Vector3.new(0,1,0) end
         if moveVec.Magnitude > 0 then
-            moveVec = moveVec.Unit * 50
+            moveVec = moveVec.Unit * flySpeed
         end
         bodyVelocity.Velocity = moveVec
         bodyGyro.CFrame = camCF
@@ -62,9 +64,12 @@ local function stopFly()
     flying = false
     if bodyVelocity then bodyVelocity:Destroy() bodyVelocity=nil end
     if bodyGyro then bodyGyro:Destroy() bodyGyro=nil end
+    game:GetService("RunService"):UnbindFromRenderStep("Fly")
 end
 
+local noclipActive = false
 local function setNoClip(enabled)
+    noclipActive = enabled
     if enabled then
         game:GetService("RunService"):BindToRenderStep("NoClip", Enum.RenderPriority.Character.Value, function()
             for _, part in ipairs(character:GetChildren()) do
@@ -84,13 +89,15 @@ local function setNoClip(enabled)
 end
 
 local antiAfkConnection
-
 local function setAntiAfk(enabled)
     if enabled then
-        antiAfkConnection = player.Idled:Connect(function()
-            game:GetService("VirtualUser"):CaptureController()
-            game:GetService("VirtualUser"):ClickButton2(Vector2.new())
-        end)
+        if not antiAfkConnection then
+            antiAfkConnection = player.Idled:Connect(function()
+                local vu = game:GetService("VirtualUser")
+                vu:CaptureController()
+                vu:ClickButton2(Vector2.new())
+            end)
+        end
     else
         if antiAfkConnection then
             antiAfkConnection:Disconnect()
@@ -100,12 +107,12 @@ local function setAntiAfk(enabled)
 end
 
 local godModeConnection
-
 local function setGodMode(enabled)
     if enabled then
         humanoid.MaxHealth = math.huge
         humanoid.Health = math.huge
         humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+        if godModeConnection then godModeConnection:Disconnect() end
         godModeConnection = humanoid.HealthChanged:Connect(function()
             if humanoid.Health < humanoid.MaxHealth then
                 humanoid.Health = humanoid.MaxHealth
@@ -184,9 +191,21 @@ Window:CreateSlider({
     end
 })
 
+Window:CreateSlider({
+    Name = "Fly Speed",
+    Min = 10,
+    Max = 150,
+    Default = flySpeed,
+    Flag = "flySpeedSlider",
+    Callback = function(value)
+        flySpeed = value
+    end
+})
+
 player.CharacterAdded:Connect(function(char)
     character = char
     humanoid = char:WaitForChild("Humanoid")
-    humanoid.WalkSpeed = humanoid.WalkSpeed
-    humanoid.JumpPower = humanoid.JumpPower
+    if noclipActive then
+        setNoClip(true)
+    end
 end)
