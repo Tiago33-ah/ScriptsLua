@@ -1,28 +1,115 @@
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
-local Window = Rayfield:CreateWindow({
-    Name = "Player Cheats",
-    LoadingTitle = "Loading Player Cheats...",
-    LoadingSubtitle = "by AKASHI",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "",
-        FileName = "PlayerCheatsConfig"
-    },
-    Discord = {
-        Enabled = false,
-        Invite = "",
-        RememberJoins = true
-    },
-    KeySystem = false
-})
+-- Simple Player Cheats UI and Feature Script (no Rayfield)
 
+-- Create UI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PlayerCheatsGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 250, 0, 350)
+Frame.Position = UDim2.new(0, 20, 0, 100)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Text = "Player Cheats"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 22
+Title.Parent = Frame
+
+-- Helper for UI element layout
+local function addLabel(name, y)
+    local lbl = Instance.new("TextLabel")
+    lbl.Text = name
+    lbl.Size = UDim2.new(0.5, -10, 0, 24)
+    lbl.Position = UDim2.new(0, 10, 0, y)
+    lbl.BackgroundTransparency = 1
+    lbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+    lbl.Font = Enum.Font.SourceSans
+    lbl.TextSize = 18
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = Frame
+    return lbl
+end
+
+local function addToggle(y, callback)
+    local btn = Instance.new("TextButton")
+    btn.Text = "OFF"
+    btn.Size = UDim2.new(0.4, 0, 0, 24)
+    btn.Position = UDim2.new(0.55, 0, 0, y)
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+    btn.Parent = Frame
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = state and "ON" or "OFF"
+        btn.BackgroundColor3 = state and Color3.fromRGB(0,170,0) or Color3.fromRGB(70,70,70)
+        callback(state)
+    end)
+    return btn
+end
+
+local function addSlider(name, min, max, init, y, callback)
+    addLabel(name, y)
+    local slider = Instance.new("TextButton")
+    slider.Size = UDim2.new(0.7, 0, 0, 20)
+    slider.Position = UDim2.new(0.25, 0, 0, y)
+    slider.BackgroundColor3 = Color3.fromRGB(70, 70, 120)
+    slider.TextColor3 = Color3.fromRGB(255,255,255)
+    slider.Font = Enum.Font.SourceSans
+    slider.TextSize = 14
+    slider.Text = tostring(init)
+    slider.Parent = Frame
+    local value = init
+    slider.MouseButton1Click:Connect(function()
+        local input = tonumber(game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("PlayerCheatsGui"):FindFirstChild("InputBox") and ScreenGui.InputBox.Text or nil)
+        if not input then
+            -- Create an input box
+            local box = Instance.new("TextBox")
+            box.Name = "InputBox"
+            box.Size = UDim2.new(0.5, 0, 0, 20)
+            box.Position = UDim2.new(0.25, 0, 0, y + 25)
+            box.BackgroundColor3 = Color3.fromRGB(50,50,100)
+            box.TextColor3 = Color3.fromRGB(255,255,255)
+            box.Text = tostring(value)
+            box.PlaceholderText = tostring(min).." - "..tostring(max)
+            box.Parent = ScreenGui
+            box.FocusLost:Connect(function(enter)
+                if enter then
+                    local num = tonumber(box.Text)
+                    if num and num >= min and num <= max then
+                        value = num
+                        slider.Text = tostring(num)
+                        callback(num)
+                    end
+                    box:Destroy()
+                end
+            end)
+            box:CaptureFocus()
+        end
+    end)
+end
+
+-- Vars
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local flying = false
 local bodyVelocity, bodyGyro
 local flySpeed = 50
+local noclipActive = false
+local antiAfkConnection
+local godModeConnection
 
+-- Functions
 local function startFly()
     if flying then return end
     flying = true
@@ -67,7 +154,6 @@ local function stopFly()
     game:GetService("RunService"):UnbindFromRenderStep("Fly")
 end
 
-local noclipActive = false
 local function setNoClip(enabled)
     noclipActive = enabled
     if enabled then
@@ -88,7 +174,6 @@ local function setNoClip(enabled)
     end
 end
 
-local antiAfkConnection
 local function setAntiAfk(enabled)
     if enabled then
         if not antiAfkConnection then
@@ -106,7 +191,6 @@ local function setAntiAfk(enabled)
     end
 end
 
-local godModeConnection
 local function setGodMode(enabled)
     if enabled then
         humanoid.MaxHealth = math.huge
@@ -129,83 +213,72 @@ local function setGodMode(enabled)
     end
 end
 
-Window:CreateToggle({
-    Name = "Fly",
-    CurrentValue = false,
-    Flag = "flyToggle",
-    Callback = function(state)
-        if state then
-            startFly()
-        else
-            stopFly()
-        end
-    end
-})
+-- Add controls
+addLabel("Fly", 40)
+addToggle(40, function(state)
+    if state then startFly() else stopFly() end
+end)
 
-Window:CreateToggle({
-    Name = "NoClip",
-    CurrentValue = false,
-    Flag = "noclipToggle",
-    Callback = function(state)
-        setNoClip(state)
-    end
-})
+addLabel("NoClip", 70)
+addToggle(70, function(state)
+    setNoClip(state)
+end)
 
-Window:CreateToggle({
-    Name = "Anti AFK",
-    CurrentValue = false,
-    Flag = "antiAfkToggle",
-    Callback = function(state)
-        setAntiAfk(state)
-    end
-})
+addLabel("Anti AFK", 100)
+addToggle(100, function(state)
+    setAntiAfk(state)
+end)
 
-Window:CreateToggle({
-    Name = "God Mode",
-    CurrentValue = false,
-    Flag = "godModeToggle",
-    Callback = function(state)
-        setGodMode(state)
-    end
-})
+addLabel("God Mode", 130)
+addToggle(130, function(state)
+    setGodMode(state)
+end)
 
-Window:CreateSlider({
-    Name = "WalkSpeed",
-    Min = 16,
-    Max = 250,
-    Default = humanoid.WalkSpeed,
-    Flag = "walkSpeedSlider",
-    Callback = function(value)
-        humanoid.WalkSpeed = value
-    end
-})
+addSlider("WalkSpeed", 16, 250, humanoid.WalkSpeed, 170, function(value)
+    humanoid.WalkSpeed = value
+end)
 
-Window:CreateSlider({
-    Name = "JumpPower",
-    Min = 50,
-    Max = 250,
-    Default = humanoid.JumpPower,
-    Flag = "jumpPowerSlider",
-    Callback = function(value)
-        humanoid.JumpPower = value
-    end
-})
+addSlider("JumpPower", 50, 250, humanoid.JumpPower, 200, function(value)
+    humanoid.JumpPower = value
+end)
 
-Window:CreateSlider({
-    Name = "Fly Speed",
-    Min = 10,
-    Max = 150,
-    Default = flySpeed,
-    Flag = "flySpeedSlider",
-    Callback = function(value)
-        flySpeed = value
-    end
-})
+addSlider("Fly Speed", 10, 150, flySpeed, 230, function(value)
+    flySpeed = value
+end)
 
+-- Handle character respawn
 player.CharacterAdded:Connect(function(char)
     character = char
     humanoid = char:WaitForChild("Humanoid")
-    if noclipActive then
-        setNoClip(true)
+    if noclipActive then setNoClip(true) end
+end)
+
+-- Drag UI
+local UserInputService = game:GetService("UserInputService")
+local dragging, dragInput, dragStart, startPos
+
+Frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = Frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
