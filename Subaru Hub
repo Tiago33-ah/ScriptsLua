@@ -1,14 +1,4 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
-
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-
 local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
-
 local Window = Rayfield:CreateWindow({
     Name = "Player Cheats",
     LoadingTitle = "Loading Player Cheats...",
@@ -26,17 +16,9 @@ local Window = Rayfield:CreateWindow({
     KeySystem = false
 })
 
-local toggles = {
-    fly = false,
-    noclip = false,
-    antiAfk = false,
-    godMode = false
-}
-local speeds = {
-    walkspeed = 16,
-    jumppower = 50
-}
-
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
 local flying = false
 local bodyVelocity, bodyGyro
 
@@ -53,21 +35,21 @@ local function startFly()
     bodyGyro.MaxTorque = Vector3.new(1e5,1e5,1e5)
     bodyGyro.CFrame = rootPart.CFrame
     bodyGyro.Parent = rootPart
-    RunService:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value, function()
+    game:GetService("RunService"):BindToRenderStep("Fly", Enum.RenderPriority.Character.Value, function()
         if not flying then
             if bodyVelocity then bodyVelocity:Destroy() bodyVelocity=nil end
             if bodyGyro then bodyGyro:Destroy() bodyGyro=nil end
-            RunService:UnbindFromRenderStep("Fly")
+            game:GetService("RunService"):UnbindFromRenderStep("Fly")
             return
         end
         local camCF = workspace.CurrentCamera.CFrame
         local moveVec = Vector3.new()
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + camCF.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - camCF.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - camCF.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + camCF.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVec = moveVec + Vector3.new(0,1,0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveVec = moveVec - Vector3.new(0,1,0) end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + camCF.LookVector end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - camCF.LookVector end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - camCF.RightVector end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + camCF.RightVector end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then moveVec = moveVec + Vector3.new(0,1,0) end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) then moveVec = moveVec - Vector3.new(0,1,0) end
         if moveVec.Magnitude > 0 then
             moveVec = moveVec.Unit * 50
         end
@@ -84,7 +66,7 @@ end
 
 local function setNoClip(enabled)
     if enabled then
-        RunService:BindToRenderStep("NoClip", Enum.RenderPriority.Character.Value, function()
+        game:GetService("RunService"):BindToRenderStep("NoClip", Enum.RenderPriority.Character.Value, function()
             for _, part in ipairs(character:GetChildren()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
@@ -92,7 +74,7 @@ local function setNoClip(enabled)
             end
         end)
     else
-        RunService:UnbindFromRenderStep("NoClip")
+        game:GetService("RunService"):UnbindFromRenderStep("NoClip")
         for _, part in ipairs(character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = true
@@ -106,8 +88,8 @@ local antiAfkConnection
 local function setAntiAfk(enabled)
     if enabled then
         antiAfkConnection = player.Idled:Connect(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
+            game:GetService("VirtualUser"):CaptureController()
+            game:GetService("VirtualUser"):ClickButton2(Vector2.new())
         end)
     else
         if antiAfkConnection then
@@ -145,7 +127,6 @@ Window:CreateToggle({
     CurrentValue = false,
     Flag = "flyToggle",
     Callback = function(state)
-        toggles.fly = state
         if state then
             startFly()
         else
@@ -159,7 +140,6 @@ Window:CreateToggle({
     CurrentValue = false,
     Flag = "noclipToggle",
     Callback = function(state)
-        toggles.noclip = state
         setNoClip(state)
     end
 })
@@ -169,7 +149,6 @@ Window:CreateToggle({
     CurrentValue = false,
     Flag = "antiAfkToggle",
     Callback = function(state)
-        toggles.antiAfk = state
         setAntiAfk(state)
     end
 })
@@ -179,7 +158,6 @@ Window:CreateToggle({
     CurrentValue = false,
     Flag = "godModeToggle",
     Callback = function(state)
-        toggles.godMode = state
         setGodMode(state)
     end
 })
@@ -191,7 +169,6 @@ Window:CreateSlider({
     Default = humanoid.WalkSpeed,
     Flag = "walkSpeedSlider",
     Callback = function(value)
-        speeds.walkspeed = value
         humanoid.WalkSpeed = value
     end
 })
@@ -203,7 +180,6 @@ Window:CreateSlider({
     Default = humanoid.JumpPower,
     Flag = "jumpPowerSlider",
     Callback = function(value)
-        speeds.jumppower = value
         humanoid.JumpPower = value
     end
 })
@@ -211,15 +187,6 @@ Window:CreateSlider({
 player.CharacterAdded:Connect(function(char)
     character = char
     humanoid = char:WaitForChild("Humanoid")
-    humanoid.WalkSpeed = speeds.walkspeed
-    humanoid.JumpPower = speeds.jumppower
-    if toggles.godMode then
-        setGodMode(true)
-    end
-    if toggles.noclip then
-        setNoClip(true)
-    end
-    if toggles.fly then
-        startFly()
-    end
+    humanoid.WalkSpeed = humanoid.WalkSpeed
+    humanoid.JumpPower = humanoid.JumpPower
 end)
