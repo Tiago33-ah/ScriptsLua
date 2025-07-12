@@ -1,0 +1,238 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Load Fluent UI
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local window = Fluent:CreateWindow({
+    Name = "Player Cheats",
+    Size = Vector2.new(400, 400),
+    Theme = Fluent.Themes.Dark,
+})
+
+-- Variables
+local toggles = {
+    fly = false,
+    noclip = false,
+    antiAfk = false,
+    godMode = false,
+}
+local speeds = {
+    walkspeed = 16,
+    jumppower = 50,
+}
+
+-- Fly variables
+local flying = false
+local flySpeed = 50
+local bodyVelocity, bodyGyro
+
+-- Function: Fly toggle
+local function startFly()
+    if flying then return end
+    flying = true
+
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = rootPart
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    bodyGyro.CFrame = rootPart.CFrame
+    bodyGyro.Parent = rootPart
+
+    local moveVector = Vector3.new()
+
+    local function updateFly()
+        if not flying then
+            bodyVelocity:Destroy()
+            bodyGyro:Destroy()
+            bodyVelocity = nil
+            bodyGyro = nil
+            return
+        end
+
+        local camCF = workspace.CurrentCamera.CFrame
+        moveVector = Vector3.new(0, 0, 0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveVector = moveVector + camCF.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveVector = moveVector - camCF.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveVector = moveVector - camCF.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveVector = moveVector + camCF.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveVector = moveVector + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            moveVector = moveVector - Vector3.new(0, 1, 0)
+        end
+
+        bodyVelocity.Velocity = moveVector.Unit * flySpeed
+        bodyGyro.CFrame = camCF
+    end
+
+    RunService:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value, updateFly)
+end
+
+local function stopFly()
+    flying = false
+    RunService:UnbindFromRenderStep("Fly")
+    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
+end
+
+-- Toggle Fly
+local function toggleFly(state)
+    if state then
+        startFly()
+    else
+        stopFly()
+    end
+end
+
+-- NoClip logic
+local function setNoClip(enabled)
+    local function noClipLoop()
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = not enabled
+            end
+        end
+    end
+
+    if enabled then
+        RunService:BindToRenderStep("NoClip", Enum.RenderPriority.Character.Value, noClipLoop)
+    else
+        RunService:UnbindFromRenderStep("NoClip")
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
+-- Anti AFK (simulate user input)
+local VirtualUser = game:GetService("VirtualUser")
+local antiAfkConnection
+
+local function setAntiAfk(enabled)
+    if enabled then
+        antiAfkConnection = player.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+    else
+        if antiAfkConnection then
+            antiAfkConnection:Disconnect()
+            antiAfkConnection = nil
+        end
+    end
+end
+
+-- God Mode (Humanoid properties)
+local function setGodMode(enabled)
+    if enabled then
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+        humanoid.NameDisplayDistance = 0 -- hide name maybe
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+        humanoid.HealthChanged:Connect(function()
+            if humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.MaxHealth
+            end
+        end)
+    else
+        humanoid.MaxHealth = 100
+        humanoid.Health = 100
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+    end
+end
+
+-- Fluent UI creation
+
+window:CreateToggle({
+    Name = "Fly",
+    Callback = function(state)
+        toggles.fly = state
+        toggleFly(state)
+    end,
+})
+
+window:CreateToggle({
+    Name = "NoClip",
+    Callback = function(state)
+        toggles.noclip = state
+        setNoClip(state)
+    end,
+})
+
+window:CreateToggle({
+    Name = "Anti AFK",
+    Callback = function(state)
+        toggles.antiAfk = state
+        setAntiAfk(state)
+    end,
+})
+
+window:CreateToggle({
+    Name = "God Mode",
+    Callback = function(state)
+        toggles.godMode = state
+        setGodMode(state)
+    end,
+})
+
+window:CreateSlider({
+    Name = "WalkSpeed",
+    Min = 16,
+    Max = 250,
+    Value = humanoid.WalkSpeed,
+    Callback = function(value)
+        speeds.walkspeed = value
+        humanoid.WalkSpeed = value
+    end,
+})
+
+window:CreateSlider({
+    Name = "JumpPower",
+    Min = 50,
+    Max = 250,
+    Value = humanoid.JumpPower,
+    Callback = function(value)
+        speeds.jumppower = value
+        humanoid.JumpPower = value
+    end,
+})
+
+-- Character respawn handling
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    humanoid.WalkSpeed = speeds.walkspeed
+    humanoid.JumpPower = speeds.jumppower
+    if toggles.godMode then
+        setGodMode(true)
+    end
+    if toggles.noclip then
+        setNoClip(true)
+    end
+    if toggles.fly then
+        toggleFly(true)
+    end
+end)
