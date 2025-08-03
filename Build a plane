@@ -1,0 +1,300 @@
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+	Name = "Build a Plane",
+	LoadingTitle = "Build a Plane",
+	LoadingSubtitle = "By XxMoonXx",
+	ConfigurationSaving = {
+		Enabled = false
+	}
+})
+
+local MainTab = Window:CreateTab("Main", 4483362458)
+local PlayerTab = Window:CreateTab("Local Player", 4483362458)
+
+local toggledFarm = false
+local runningFarm = false
+
+local toggledBlood = false
+local runningBlood = false
+
+local toggledBuy = false
+local runningBuy = false
+
+local toggledSpin = false
+local runningSpin = false
+
+local noclip = false
+local infjump = false
+
+MainTab:CreateToggle({
+	Name = "MoneyFarm",
+	CurrentValue = false,
+	Flag = "MoneyFarmToggle",
+	Callback = function(Value)
+		toggledFarm = Value
+		if toggledFarm and not runningFarm then
+			runningFarm = true
+			task.spawn(function()
+				local player = game.Players.LocalPlayer
+				local button = player:WaitForChild("PlayerGui"):WaitForChild("Main"):WaitForChild("LaunchUI"):WaitForChild("Buttons"):WaitForChild("ReturnButton")
+				local launchRemote = game:GetService("ReplicatedStorage").Remotes.LaunchEvents.Launch
+
+				while toggledFarm do
+					local char = player.Character or player.CharacterAdded:Wait()
+					local hrp = char:WaitForChild("HumanoidRootPart")
+					launchRemote:FireServer()
+					task.wait(1.5)
+					hrp.CFrame = CFrame.new(1e22, 1e22, 1e22)
+					task.wait(1)
+					pcall(function()
+						if button and button:IsA("ImageButton") then
+							firesignal(button.MouseButton1Click)
+						end
+					end)
+					task.wait(1.5)
+				end
+				runningFarm = false
+			end)
+		end
+	end
+})
+
+MainTab:CreateToggle({
+	Name = "Auto BloodMoon",
+	CurrentValue = false,
+	Flag = "BloodMoonToggle",
+	Callback = function(Value)
+		toggledBlood = Value
+		if toggledBlood and not runningBlood then
+			runningBlood = true
+			task.spawn(function()
+				local player = game.Players.LocalPlayer
+				local button = player:WaitForChild("PlayerGui"):WaitForChild("Main"):WaitForChild("LaunchUI"):WaitForChild("Buttons"):WaitForChild("ReturnButton")
+				local launchRemote = game:GetService("ReplicatedStorage").Remotes.LaunchEvents.Launch
+
+				while toggledBlood do
+					local char = player.Character or player.CharacterAdded:Wait()
+					local hrp = char:WaitForChild("HumanoidRootPart")
+
+					launchRemote:FireServer()
+					task.wait(1)
+
+					local portalFolder = workspace:FindFirstChild("SpawnedSections")
+					if portalFolder then
+						local balloon = portalFolder:FindFirstChild("AirBalloonSegment3")
+						if balloon then
+							local portals = balloon:FindFirstChild("BloodMoonPortals")
+							if portals then
+								for _, p in pairs(portals:GetChildren()) do
+									if p:IsA("BasePart") and p.Name == "Portal" then
+										hrp.CFrame = p.CFrame + Vector3.new(0, 5, 0)
+										break
+									end
+								end
+							end
+						end
+					end
+
+					task.wait(1)
+
+					local spawnedSections = workspace:FindFirstChild("SpawnedSections")
+					if spawnedSections then
+						for _, section in pairs(spawnedSections:GetChildren()) do
+							if section:IsA("Model") then
+								local coinsFolder = section:FindFirstChild("Coins")
+								if coinsFolder then
+									for _, coin in pairs(coinsFolder:GetChildren()) do
+										if coin:IsA("BasePart") then
+											hrp.CFrame = coin.CFrame + Vector3.new(0, 5, 0)
+											task.wait(0.3)
+										end
+									end
+								end
+							end
+						end
+					end
+
+					task.wait(1)
+					pcall(function()
+						if button and button:IsA("ImageButton") then
+							firesignal(button.MouseButton1Click)
+						end
+					end)
+					task.wait(1.5)
+				end
+				runningBlood = false
+			end)
+		end
+	end
+})
+
+MainTab:CreateToggle({
+	Name = "Auto Buy All",
+	CurrentValue = false,
+	Flag = "AutoBuyToggle",
+	Callback = function(Value)
+		toggledBuy = Value
+		if toggledBuy and not runningBuy then
+			runningBuy = true
+			task.spawn(function()
+				local shopRemote = game:GetService("ReplicatedStorage").Remotes.ShopEvents.BuyBlock
+
+				local list = {
+					"block_1",
+					"wing_1",
+					"fuel_1",
+					"propeller_1",
+					"propeller_2",
+					"propeller_3",
+					"wing_2",
+					"wing_3",
+					"fuel_2",
+					"fuel_3",
+					"Balloon",
+				}
+
+				local index = 1
+
+				while toggledBuy do
+					local item = list[index]
+					if item then
+						pcall(function()
+							shopRemote:FireServer(item)
+						end)
+					end
+					index += 1
+					if index > #list then
+						index = 1
+					end
+					task.wait(0.2)
+				end
+
+				runningBuy = false
+			end)
+		end
+	end
+})
+
+MainTab:CreateToggle({
+	Name = "Auto Spin Wheel",
+	CurrentValue = false,
+	Flag = "AutoSpinToggle",
+	Callback = function(Value)
+		toggledSpin = Value
+		if toggledSpin and not runningSpin then
+			runningSpin = true
+			task.spawn(function()
+				local spinRemote1 = game:GetService("ReplicatedStorage").Remotes.SpinEvents.PurchaseSpin
+				local spinRemote2 = game:GetService("ReplicatedStorage").Remotes.SpinEvents.PerformSpin
+
+				while toggledSpin do
+					pcall(function()
+						spinRemote1:InvokeServer()
+					end)
+					task.wait(0.5)
+					pcall(function()
+						spinRemote2:InvokeServer()
+					end)
+					task.wait(1)
+				end
+				runningSpin = false
+			end)
+		end
+	end
+})
+
+MainTab:CreateButton({
+	Name = "Anti AFK",
+	Callback = function()
+		for _, conn in pairs(getconnections(game.Players.LocalPlayer.Idled)) do
+			conn:Disable()
+		end
+	end
+})
+
+MainTab:CreateButton({
+	Name = "No Lag (Remove Map Textures)",
+	Callback = function()
+		for _, obj in pairs(workspace:GetDescendants()) do
+			if obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
+				obj:Destroy()
+			elseif obj:IsA("BasePart") then
+				obj.Material = Enum.Material.SmoothPlastic
+			end
+		end
+	end
+})
+
+PlayerTab:CreateSlider({
+	Name = "WalkSpeed",
+	Range = {16, 300},
+	Increment = 1,
+	CurrentValue = 16,
+	Callback = function(Value)
+		local char = game.Players.LocalPlayer.Character
+		if char then
+			local humanoid = char:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				humanoid.WalkSpeed = Value
+			end
+		end
+	end
+})
+
+PlayerTab:CreateSlider({
+	Name = "JumpPower",
+	Range = {50, 300},
+	Increment = 5,
+	CurrentValue = 50,
+	Callback = function(Value)
+		local char = game.Players.LocalPlayer.Character
+		if char then
+			local humanoid = char:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				humanoid.JumpPower = Value
+			end
+		end
+	end
+})
+
+PlayerTab:CreateToggle({
+	Name = "Infinite Jump",
+	CurrentValue = false,
+	Flag = "InfJump",
+	Callback = function(Value)
+		infjump = Value
+	end
+})
+
+PlayerTab:CreateToggle({
+	Name = "NoClip",
+	CurrentValue = false,
+	Flag = "NoClipToggle",
+	Callback = function(Value)
+		noclip = Value
+	end
+})
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+	if infjump then
+		local char = game.Players.LocalPlayer.Character
+		if char then
+			local hrp = char:FindFirstChild("HumanoidRootPart")
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hrp and hum then
+				hrp.Velocity = Vector3.new(0, hum.JumpPower, 0)
+			end
+		end
+	end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+	if noclip then
+		for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+			if v:IsA("BasePart") and v.CanCollide then
+				v.CanCollide = false
+			end
+		end
+	end
+end)
