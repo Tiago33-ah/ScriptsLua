@@ -7,7 +7,7 @@ local Window = Rayfield:CreateWindow({
 	ConfigurationSaving = {
 		Enabled = true,
 		FolderName = "TypeSoulConfig",
-		FileName = "AutoM1Settings"
+		FileName = "Settings"
 	},
 	Discord = {
 		Enabled = false
@@ -15,29 +15,68 @@ local Window = Rayfield:CreateWindow({
 	KeySystem = false
 })
 
--- ANTI AFK
 game:GetService("Players").LocalPlayer.Idled:Connect(function()
 	game:GetService("VirtualUser"):Button2Down(Vector2.new())
 	task.wait(1)
 	game:GetService("VirtualUser"):Button2Up(Vector2.new())
 end)
 
--- TABS
 local MainTab = Window:CreateTab("Main", 4483362458)
-local LocalPlayerTab = Window:CreateTab("Local Player", 6034287594)
+local LocalTab = Window:CreateTab("Local Player", 6034287594)
 
--- VARIABLES
 local autoM1 = false
 local autoSprint = false
+local autoParry = false
 local flying = false
+local flySpeed = 60
 
--- AUTO M1
 MainTab:CreateToggle({
 	Name = "Auto M1",
 	CurrentValue = false,
-	Flag = "AutoM1Toggle",
-	Callback = function(Value)
-		autoM1 = Value
+	Flag = "AutoM1",
+	Callback = function(v) autoM1 = v end
+})
+
+MainTab:CreateToggle({
+	Name = "Auto Sprint",
+	CurrentValue = false,
+	Flag = "AutoSprint",
+	Callback = function(v) autoSprint = v end
+})
+
+MainTab:CreateToggle({
+	Name = "Auto Parry",
+	CurrentValue = false,
+	Flag = "AutoParry",
+	Callback = function(v) autoParry = v end
+})
+
+MainTab:CreateButton({
+	Name = "Auto Mission",
+	Callback = function()
+		local function getNil(name,class)
+			for _,v in next, getnilinstances() do
+				if v.ClassName==class and v.Name==name then
+					return v
+				end
+			end
+		end
+		local args = {"Yes"}
+		Instance.new("RemoteEvent", nil):FireServer(unpack(args))
+	end
+})
+
+MainTab:CreateButton({
+	Name = "Remove Player Anims",
+	Callback = function()
+		local char = game.Players.LocalPlayer.Character
+		if char then
+			for _,v in pairs(char:GetDescendants()) do
+				if v:IsA("Animator") or v:IsA("Animation") then
+					v:Destroy()
+				end
+			end
+		end
 	end
 })
 
@@ -47,64 +86,48 @@ task.spawn(function()
 			local args = { "LightAttack" }
 			game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ServerCombatHandler"):FireServer(unpack(args))
 		end
-		task.wait(0.1)
-	end
-end)
-
--- AUTO SPRINT
-MainTab:CreateToggle({
-	Name = "Auto Sprint",
-	CurrentValue = false,
-	Flag = "AutoSprintToggle",
-	Callback = function(Value)
-		autoSprint = Value
-	end
-})
-
-task.spawn(function()
-	while true do
 		if autoSprint then
-			local char = game:GetService("Players").LocalPlayer.Character
+			local char = game.Players.LocalPlayer.Character
 			if char and char:FindFirstChild("CharacterHandler") then
 				local args = { "Pressed" }
 				char.CharacterHandler:WaitForChild("Remotes"):WaitForChild("Sprint"):FireServer(unpack(args))
 			end
 		end
-		task.wait(1)
+		if autoParry then
+			local char = game.Players.LocalPlayer.Character
+			if char and char:FindFirstChild("CharacterHandler") then
+				local args = { "Released" }
+				char.CharacterHandler:WaitForChild("Remotes"):WaitForChild("Block"):FireServer(unpack(args))
+			end
+		end
+		task.wait(0.1)
 	end
 end)
 
--- WALK SPEED
-LocalPlayerTab:CreateSlider({
+LocalTab:CreateSlider({
 	Name = "WalkSpeed",
 	Range = {16, 200},
 	Increment = 1,
 	CurrentValue = 16,
-	Callback = function(Value)
-		local char = game.Players.LocalPlayer.Character
-		if char then
-			char:FindFirstChildOfClass("Humanoid").WalkSpeed = Value
-		end
+	Callback = function(v)
+		local h = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+		if h then h.WalkSpeed = v end
 	end
 })
 
--- JUMP POWER
-LocalPlayerTab:CreateSlider({
+LocalTab:CreateSlider({
 	Name = "JumpPower",
 	Range = {50, 200},
 	Increment = 1,
 	CurrentValue = 50,
-	Callback = function(Value)
-		local char = game.Players.LocalPlayer.Character
-		if char then
-			char:FindFirstChildOfClass("Humanoid").JumpPower = Value
-		end
+	Callback = function(v)
+		local h = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+		if h then h.JumpPower = v end
 	end
 })
 
--- INFINITE JUMP
-LocalPlayerTab:CreateButton({
-	Name = "Enable Infinite Jump",
+LocalTab:CreateButton({
+	Name = "Infinite Jump",
 	Callback = function()
 		game:GetService("UserInputService").JumpRequest:Connect(function()
 			local char = game.Players.LocalPlayer.Character
@@ -115,54 +138,66 @@ LocalPlayerTab:CreateButton({
 	end
 })
 
--- REDUCE LAG (Remove Textures)
-LocalPlayerTab:CreateButton({
+LocalTab:CreateButton({
 	Name = "Reduce Lag (Remove Textures)",
 	Callback = function()
-		for _, obj in pairs(game:GetDescendants()) do
-			if obj:IsA("Texture") or obj:IsA("Decal") then
-				obj:Destroy()
+		for _,v in pairs(game:GetDescendants()) do
+			if v:IsA("Texture") or v:IsA("Decal") then
+				v:Destroy()
 			end
 		end
 	end
 })
 
--- SMOOTH FLY
-LocalPlayerTab:CreateToggle({
+LocalTab:CreateSlider({
+	Name = "Fly Speed",
+	Range = {20, 200},
+	Increment = 5,
+	CurrentValue = 60,
+	Callback = function(v) flySpeed = v end
+})
+
+LocalTab:CreateToggle({
 	Name = "Fly Smooth",
 	CurrentValue = false,
 	Flag = "FlyToggle",
-	Callback = function(Value)
-		flying = Value
+	Callback = function(v)
+		flying = v
 		local lp = game.Players.LocalPlayer
 		local char = lp.Character or lp.CharacterAdded:Wait()
-		local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
+		local hrp = char:WaitForChild("HumanoidRootPart")
+
+		if not flying then
+			local old = hrp:FindFirstChild("FlyVelocity")
+			if old then old:Destroy() end
+			return
+		end
 
 		local bv = Instance.new("BodyVelocity")
 		bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
 		bv.Velocity = Vector3.zero
 		bv.Name = "FlyVelocity"
-		bv.Parent = humanoidRootPart
+		bv.Parent = hrp
 
-		local UIS = game:GetService("UserInputService")
-		local flyDir = Vector3.zero
-
-		local function updateDirection()
-			local cam = workspace.CurrentCamera
-			local dir = Vector3.zero
-			if UIS:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
-			if UIS:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
-			if UIS:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
-			if UIS:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-			if UIS:IsKeyDown(Enum.KeyCode.Space) then dir += cam.CFrame.UpVector end
-			if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= cam.CFrame.UpVector end
-			flyDir = dir.Unit
-		end
+		local uis = game:GetService("UserInputService")
+		local dir = Vector3.zero
 
 		task.spawn(function()
 			while flying and bv and bv.Parent do
-				updateDirection()
-				bv.Velocity = flyDir * 60
+				local cam = workspace.CurrentCamera
+				local d = Vector3.zero
+				if uis:IsKeyDown(Enum.KeyCode.W) then d += cam.CFrame.LookVector end
+				if uis:IsKeyDown(Enum.KeyCode.S) then d -= cam.CFrame.LookVector end
+				if uis:IsKeyDown(Enum.KeyCode.A) then d -= cam.CFrame.RightVector end
+				if uis:IsKeyDown(Enum.KeyCode.D) then d += cam.CFrame.RightVector end
+				if uis:IsKeyDown(Enum.KeyCode.Space) then d += cam.CFrame.UpVector end
+				if uis:IsKeyDown(Enum.KeyCode.LeftControl) then d -= cam.CFrame.UpVector end
+				if d.Magnitude > 0 then
+					dir = d.Unit
+				else
+					dir = Vector3.zero
+				end
+				bv.Velocity = dir * flySpeed
 				task.wait()
 			end
 			if bv then bv:Destroy() end
