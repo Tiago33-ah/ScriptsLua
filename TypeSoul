@@ -1,0 +1,171 @@
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+	Name = "Type Soul Script | by XxMoonXx",
+	LoadingTitle = "Type Soul Script",
+	LoadingSubtitle = "by XxMoonXx",
+	ConfigurationSaving = {
+		Enabled = true,
+		FolderName = "TypeSoulConfig",
+		FileName = "AutoM1Settings"
+	},
+	Discord = {
+		Enabled = false
+	},
+	KeySystem = false
+})
+
+-- ANTI AFK
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+	game:GetService("VirtualUser"):Button2Down(Vector2.new())
+	task.wait(1)
+	game:GetService("VirtualUser"):Button2Up(Vector2.new())
+end)
+
+-- TABS
+local MainTab = Window:CreateTab("Main", 4483362458)
+local LocalPlayerTab = Window:CreateTab("Local Player", 6034287594)
+
+-- VARIABLES
+local autoM1 = false
+local autoSprint = false
+local flying = false
+
+-- AUTO M1
+MainTab:CreateToggle({
+	Name = "Auto M1",
+	CurrentValue = false,
+	Flag = "AutoM1Toggle",
+	Callback = function(Value)
+		autoM1 = Value
+	end
+})
+
+task.spawn(function()
+	while true do
+		if autoM1 then
+			local args = { "LightAttack" }
+			game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ServerCombatHandler"):FireServer(unpack(args))
+		end
+		task.wait(0.1)
+	end
+end)
+
+-- AUTO SPRINT
+MainTab:CreateToggle({
+	Name = "Auto Sprint",
+	CurrentValue = false,
+	Flag = "AutoSprintToggle",
+	Callback = function(Value)
+		autoSprint = Value
+	end
+})
+
+task.spawn(function()
+	while true do
+		if autoSprint then
+			local char = game:GetService("Players").LocalPlayer.Character
+			if char and char:FindFirstChild("CharacterHandler") then
+				local args = { "Pressed" }
+				char.CharacterHandler:WaitForChild("Remotes"):WaitForChild("Sprint"):FireServer(unpack(args))
+			end
+		end
+		task.wait(1)
+	end
+end)
+
+-- WALK SPEED
+LocalPlayerTab:CreateSlider({
+	Name = "WalkSpeed",
+	Range = {16, 200},
+	Increment = 1,
+	CurrentValue = 16,
+	Callback = function(Value)
+		local char = game.Players.LocalPlayer.Character
+		if char then
+			char:FindFirstChildOfClass("Humanoid").WalkSpeed = Value
+		end
+	end
+})
+
+-- JUMP POWER
+LocalPlayerTab:CreateSlider({
+	Name = "JumpPower",
+	Range = {50, 200},
+	Increment = 1,
+	CurrentValue = 50,
+	Callback = function(Value)
+		local char = game.Players.LocalPlayer.Character
+		if char then
+			char:FindFirstChildOfClass("Humanoid").JumpPower = Value
+		end
+	end
+})
+
+-- INFINITE JUMP
+LocalPlayerTab:CreateButton({
+	Name = "Enable Infinite Jump",
+	Callback = function()
+		game:GetService("UserInputService").JumpRequest:Connect(function()
+			local char = game.Players.LocalPlayer.Character
+			if char then
+				char:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+			end
+		end)
+	end
+})
+
+-- REDUCE LAG (Remove Textures)
+LocalPlayerTab:CreateButton({
+	Name = "Reduce Lag (Remove Textures)",
+	Callback = function()
+		for _, obj in pairs(game:GetDescendants()) do
+			if obj:IsA("Texture") or obj:IsA("Decal") then
+				obj:Destroy()
+			end
+		end
+	end
+})
+
+-- SMOOTH FLY
+LocalPlayerTab:CreateToggle({
+	Name = "Fly Smooth",
+	CurrentValue = false,
+	Flag = "FlyToggle",
+	Callback = function(Value)
+		flying = Value
+		local lp = game.Players.LocalPlayer
+		local char = lp.Character or lp.CharacterAdded:Wait()
+		local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
+
+		local bv = Instance.new("BodyVelocity")
+		bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+		bv.Velocity = Vector3.zero
+		bv.Name = "FlyVelocity"
+		bv.Parent = humanoidRootPart
+
+		local UIS = game:GetService("UserInputService")
+		local flyDir = Vector3.zero
+
+		local function updateDirection()
+			local cam = workspace.CurrentCamera
+			local dir = Vector3.zero
+			if UIS:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
+			if UIS:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
+			if UIS:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
+			if UIS:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
+			if UIS:IsKeyDown(Enum.KeyCode.Space) then dir += cam.CFrame.UpVector end
+			if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= cam.CFrame.UpVector end
+			flyDir = dir.Unit
+		end
+
+		task.spawn(function()
+			while flying and bv and bv.Parent do
+				updateDirection()
+				bv.Velocity = flyDir * 60
+				task.wait()
+			end
+			if bv then bv:Destroy() end
+		end)
+	end
+})
