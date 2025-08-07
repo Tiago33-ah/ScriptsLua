@@ -51,20 +51,47 @@ MainTab:CreateToggle({
 	Callback = function(v) autoParry = v end
 })
 
-MainTab:CreateButton({
+local autoMission = false
+
+MainTab:CreateToggle({
 	Name = "Auto Mission",
-	Callback = function()
-		local function getNil(name,class)
-			for _,v in next, getnilinstances() do
-				if v.ClassName==class and v.Name==name then
-					return v
-				end
-			end
-		end
-		local args = {"Yes"}
-		Instance.new("RemoteEvent", nil):FireServer(unpack(args))
+	CurrentValue = false,
+	Flag = "AutoMission",
+	Callback = function(Value)
+		autoMission = Value
 	end
 })
+
+task.spawn(function()
+	while true do
+		if autoMission then
+			local function getNil(name, class)
+				for _, v in next, getnilinstances() do
+					if v.ClassName == class and v.Name == name then
+						return v
+					end
+				end
+			end
+			local remote = getNil("AcceptMission", "RemoteEvent")
+			if remote then
+				local args = { "Yes" }
+				remote:FireServer(unpack(args))
+			end
+		end
+		task.wait(1)
+	end
+end)
+
+MainTab:CreateButton({
+	Name = "Force Respawn",
+	Callback = function()
+		local char = game.Players.LocalPlayer.Character
+		if char then
+			char:BreakJoints()
+		end
+	end
+})
+
 
 MainTab:CreateButton({
 	Name = "Remove Player Anims",
