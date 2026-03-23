@@ -78,9 +78,8 @@ local bodyPos
 
 local LocalPlayer = Players.LocalPlayer
 
-local startDelay = 5 -- ستارت ديلاي
-
-local flyHeight = 250 -- الارتفاع للل ts + blades
+local startDelay = 5 
+local flyHeight = 250 --  ts + blades
 
 --//==============================\\--
 --||      👑 AUTO KILL TITANS     ||--
@@ -117,8 +116,6 @@ task.spawn(function()
 		POST = result
 	end
 end)
-
--- إشعار القتل
 local activeNotifs = {}
 function showKillNotification(count)
 	if not notificationsEnabled then return end
